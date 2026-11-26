@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Con Mắt Code Chạy</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #050811;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="eyeCanvas"></canvas>
+  <script>
+    const canvas = document.getElementById("eyeCanvas");
+    const ctx = canvas.getContext("2d");
+
+    function setSize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    setSize();
+    window.addEventListener("resize", setSize);
+
+    const symbols = "01{}[]<>/\\*+-=#$@%&";
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+
+    window.addEventListener("mousemove", function(e) {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    let frame = 0;
+
+    function render() {
+      frame++;
+      ctx.fillStyle = "#050811";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+
+      const nearMouse = Math.hypot(mouseX - cx, mouseY - cy) < 220;
+      const zoom = nearMouse ? 1.45 : (1 + Math.sin(frame * 0.04) * 0.12);
+
+      const lookX = ((mouseX - cx) / (cx || 1)) * 40 + Math.sin(frame * 0.04) * 12;
+      const lookY = ((mouseY - cy) / (cy || 1)) * 18 + Math.cos(frame * 0.03) * 6;
+
+      const blink = Math.sin(frame * 0.025) > 0.97 ? 0.12 : 1;
+
+      const rx = 240 * zoom;
+      const ry = 120 * zoom * blink;
+      const step = Math.max(10, Math.round(12 * zoom));
+
+      ctx.font = "bold " + step + "px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      const ix = cx + lookX * zoom;
+      const iy = cy + lookY * zoom;
+      const irisRadius = 75 * zoom;
+      const pupilRadius = 28 * zoom;
+
+      for (let y = cy - ry - 15; y <= cy + ry + 15; y += step) {
+        for (let x = cx - rx - 15; x <= cx + rx + 15; x += step) {
+          const nx = (x - cx) / rx;
+          const ny = (y - cy) / ry;
+          if (Math.abs(nx) >= 1) continue;
+
+          const lid = Math.cos(nx * Math.PI * 0.5);
+          if (Math.abs(ny) > lid) continue;
+
+          const distIris = Math.hypot(x - ix, y - iy);
+          const angle = Math.atan2(y - iy, x - ix);
+          const ch = symbols[Math.floor(Math.random() * symbols.length)];
+
+          if (distIris < pupilRadius) {
+            ctx.fillStyle = "#00f0ff";
+            ctx.fillText(".", x, y);
+          } else if (distIris < irisRadius) {
+            const ray = Math.sin(angle * 18 + frame * 0.08);
+            const hue = (180 + ray * 80 + frame) % 360;
+            ctx.fillStyle = "hsl(" + hue + ", 100%, 58%)";
+            ctx.fillText(ch, x, y);
+          } else {
+            const edge = lid - Math.abs(ny);
+            ctx.fillStyle = edge < 0.14 ? "#ff5588" : "#d8f3ff";
+            ctx.fillText(ch, x, y);
+          }
+        }
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    render();
+  </script>
+</body>
+</html>
